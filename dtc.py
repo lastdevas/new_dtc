@@ -25,7 +25,17 @@ def main():
 
         # Convert the uploaded image to a format that the model expects
         image = Image.open(uploaded_file).convert("RGB")
-        image_array = np.array(image)
+
+        # Resize the image to the expected size
+        resized_image = image.resize((224, 224))
+        
+        # Convert the resized image to a numpy array
+        image_array = np.array(resized_image)
+        
+        # Normalize the pixel values to be between 0 and 1
+        image_array = image_array / 255.0
+
+        # Add an extra dimension to the array to represent the batch size
         image_tensor = tf.convert_to_tensor([image_array])
 
         # Detect objects in the image
@@ -36,6 +46,7 @@ def main():
         probabilities = detection_result['probabilities']
         for name, prob in zip(class_names, probabilities):
             st.write(f"{name}: {prob:.2%}")
+
 
 if __name__ == "__main__":
     main()
