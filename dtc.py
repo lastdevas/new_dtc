@@ -3,24 +3,17 @@ from PIL import Image
 import tensorflow as tf
 import numpy as np
 import gdown
-import tarfile
-import os
 
 # Google Drive file ID for the model
 file_id = '1WMUbo1u8a5lwfuBSA2NOPCh58xQkaImh'
-output_file = 'saved_model.tar.gz'
+output_file = 'saved_model.pb'
 url = f'https://drive.google.com/uc?id={file_id}'
 
 # Download the model file from Google Drive
 gdown.download(url, output_file, quiet=False)
 
-# Extract the model file
-with tarfile.open(output_file, 'r:gz') as tar:
-    tar.extractall()
-    
 # Load the saved model
-model_path = 'saved_model'
-model = tf.saved_model.load(model_path)
+model = tf.saved_model.load(output_file)
 
 # Load label map (replace 'label_map.pbtxt' with your label map file)
 label_map_path = 'path/to/label_map.pbtxt'
