@@ -2,15 +2,24 @@ import streamlit as st
 from PIL import Image
 import tensorflow as tf
 import numpy as np
-import gdown
+import requests
+from io import BytesIO
+import tarfile
+import os
 
 # Google Drive file ID for the model
 file_id = '1WMUbo1u8a5lwfuBSA2NOPCh58xQkaImh'
 output_file = 'saved_model.pb'
 url = f'https://drive.google.com/uc?id={file_id}'
 
-# Download the model file from Google Drive
-gdown.download(url, output_file, quiet=False)
+# Download the model file from Google Drive using requests
+response = requests.get(url)
+if response.status_code == 200:
+    with open(output_file, 'wb') as f:
+        f.write(response.content)
+else:
+    st.error(f"Failed to download the model. Status code: {response.status_code}")
+    st.stop()
 
 # Load the saved model
 model = tf.saved_model.load(output_file)
