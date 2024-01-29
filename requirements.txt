@@ -1,4 +1,4 @@
-Flask
-Pillow
-tensorflow
-tensorflow-hub
+streamlit 
+tensorflow 
+tensorflow-datasets 
+pillow
