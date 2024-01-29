@@ -1,5 +1,7 @@
-gdown
+streamlit
 Pillow
-tensorflow
 numpy
-matplotlib
+gdown
+tensorflow
+tensorflow-hub
+tensorflow-datasets
