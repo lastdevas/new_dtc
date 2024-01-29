@@ -1,7 +1,7 @@
 streamlit
 Pillow
-numpy
-gdown
 tensorflow
-tensorflow-hub
-tensorflow-datasets
+numpy
+requests
+protobuf
+object-detection
