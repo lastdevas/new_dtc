@@ -1,93 +1,64 @@
-import tkinter as tk
-from tkinter import filedialog
-from PIL import Image, ImageTk
-import gdown
+import streamlit as st
+from PIL import Image
 import tensorflow as tf
 import numpy as np
-from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as vis_util
+import gdown
+import tarfile
+import os
 
-class ObjectDetectionApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Object Detection App")
+# Google Drive file ID for the model
+file_id = '1WMUbo1u8a5lwfuBSA2NOPCh58xQkaImh'
+output_file = 'saved_model.tar.gz'
+url = f'https://drive.google.com/uc?id={file_id}'
 
-        # Create and place the "Choose an image" button
-        choose_button = tk.Button(root, text="Choose an image...", command=self.choose_image)
-        choose_button.pack(pady=10)
+# Download the model file from Google Drive
+gdown.download(url, output_file, quiet=False)
 
-        # Create and place a label for drag and drop instructions
-        drag_label = tk.Label(root, text="Drag and drop file here", relief="solid", width=40, height=5, bd=2)
-        drag_label.pack(pady=10)
+# Extract the model file
+with tarfile.open(output_file, 'r:gz') as tar:
+    tar.extractall()
+    
+# Load the saved model
+model_path = 'saved_model'
+model = tf.saved_model.load(model_path)
 
-        # Bind drag and drop events to the label
-        drag_label.drop_target_register(tk.DND_FILES)
-        drag_label.dnd_bind('<<Drop>>', self.drop_event)
+# Load label map (replace 'label_map.pbtxt' with your label map file)
+label_map_path = 'path/to/label_map.pbtxt'
+category_index = label_map_util.create_category_index_from_labelmap(label_map_path, use_display_name=True)
 
-        # Create and place a label for displaying the result image
-        self.result_label = tk.Label(root)
-        self.result_label.pack()
+def detect_objects(image):
+    # Perform object detection
+    img_array = np.array(image)
+    input_tensor = tf.convert_to_tensor(np.expand_dims(img_array, 0), dtype=tf.float32)
+    detections = model(input_tensor)
 
-        # Download the model file from Google Drive
-        file_id = '1WMUbo1u8a5lwfuBSA2NOPCh58xQkaImh'
-        output_file = 'saved_model.pb'
-        url = f'https://drive.google.com/uc?id={file_id}'
-        gdown.download(url, output_file, quiet=False)
+    # Visualization of the results of a detection
+    vis_util.visualize_boxes_and_labels_on_image_array(
+        img_array[0],
+        detections['detection_boxes'][0].numpy(),
+        detections['detection_classes'][0].numpy().astype(np.int32),
+        detections['detection_scores'][0].numpy(),
+        category_index,
+        use_normalized_coordinates=True,
+        max_boxes_to_draw=200,
+        min_score_thresh=0.30,
+        agnostic_mode=False
+    )
 
-        # Load the saved model
-        self.model = tf.saved_model.load(output_file)
+    return Image.fromarray(img_array)
 
-        # Load label map (replace 'label_map.pbtxt' with your label map file)
-        label_map_path = 'path/to/label_map.pbtxt'
-        self.category_index = label_map_util.create_category_index_from_labelmap(label_map_path, use_display_name=True)
+def main():
+    st.title("Object Detection with Streamlit")
 
-    def choose_image(self):
-        # Open file dialog to choose an image file
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-        # Perform object detection and update the result image in the GUI
-        self.display_result(file_path)
+    if uploaded_file is not None:
+        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
 
-    def drop_event(self, event):
-        # Get the dropped file path
-        file_path = event.data
-
-        # Perform object detection and update the result image in the GUI
-        self.display_result(file_path)
-
-    def display_result(self, image_path):
-        # Load and preprocess the image
-        img_array = self.load_and_preprocess_image(image_path)
-        input_tensor = tf.convert_to_tensor(np.expand_dims(img_array, 0), dtype=tf.float32)
-
-        # Perform object detection
-        detections = self.model(input_tensor)
-
-        # Visualization of the results of a detection
-        vis_util.visualize_boxes_and_labels_on_image_array(
-            img_array[0],
-            detections['detection_boxes'][0].numpy(),
-            detections['detection_classes'][0].numpy().astype(np.int32),
-            detections['detection_scores'][0].numpy(),
-            self.category_index,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            min_score_thresh=0.30,
-            agnostic_mode=False
-        )
-
-        # Display the result image
-        photo = ImageTk.PhotoImage(Image.fromarray(img_array))
-        self.result_label.config(image=photo)
-        self.result_label.image = photo
-
-    def load_and_preprocess_image(self, image_path):
-        img = Image.open(image_path)
-        img = img.resize((300, 300))  # Resize image to fit the model's expected size
-        img_array = np.array(img)
-        return img_array
+        if st.button("Detect Objects"):
+            image = Image.open(uploaded_file)
+            detected_image = detect_objects(image)
+            st.image(detected_image, caption="Detected Objects", use_column_width=True)
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ObjectDetectionApp(root)
-    root.mainloop()
+    main()
