@@ -1,4 +1,5 @@
-streamlit 
-tensorflow 
-tensorflow-datasets 
-pillow
+gdown
+Pillow
+tensorflow
+numpy
+matplotlib
