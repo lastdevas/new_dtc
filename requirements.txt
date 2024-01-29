@@ -1,7 +1,4 @@
-streamlit
-Pillow
 tensorflow
+tensorflow-hub
 numpy
-requests
-protobuf
-object-detection
+streamlit
