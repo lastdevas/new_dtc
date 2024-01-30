@@ -4,14 +4,14 @@ import tensorflow_hub as hub
 import numpy as np
 from PIL import Image
 
-# Load the image detector model from TensorFlow Hub
-detector_url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/classification/4"
-detector = hub.load(detector_url)
+# Load the image classification model from TensorFlow Hub
+model_url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/classification/4"
+model = hub.load(model_url)
 
-# Function to apply image detector on a single image
-def detect_objects(image_tensor):
-    detector_output = detector(image_tensor)
-    return detector_output
+# Function to apply image classification on a single image
+def classify_image(image_tensor):
+    predictions = model(image_tensor)
+    return predictions
 
 def preprocess_image(uploaded_file):
     # Convert the uploaded image to a format that the model expects
@@ -31,7 +31,7 @@ def preprocess_image(uploaded_file):
     return image_tensor
 
 def main():
-    st.title("Engine Image Detection")
+    st.title("Engine Image Classification")
 
     # File uploader
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
@@ -43,14 +43,16 @@ def main():
         # Convert and preprocess the uploaded image
         image_tensor = preprocess_image(uploaded_file)
 
-        # Detect objects in the image
-        detection_result = detect_objects(image_tensor)
+        # Classify objects in the image
+        predictions = classify_image(image_tensor)
 
-        # Display the class names and probabilities
-        class_names = detection_result['classification']
-        probabilities = detection_result['probabilities']
-        for name, prob in zip(class_names, probabilities):
-            st.write(f"{name}: {prob:.2%}")
+        # Display the top predicted classes and probabilities
+        top_classes = tf.argmax(predictions, axis=-1)
+        top_probs = tf.reduce_max(predictions, axis=-1)
+        
+        st.write("Top Predictions:")
+        for class_index, prob in zip(top_classes.numpy(), top_probs.numpy()):
+            st.write(f"Class {class_index} with probability {prob:.2%}")
 
 if __name__ == "__main__":
     main()
