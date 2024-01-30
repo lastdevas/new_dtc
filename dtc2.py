@@ -21,7 +21,7 @@ def detect_objects(image_tensor):
     return detector_output
 
 def main():
-    st.title("Object Detection with TensorFlow Hub")
+    st.title("Object Detection")
 
     # File uploader
     uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
