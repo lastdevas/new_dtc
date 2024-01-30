@@ -1,16 +1,24 @@
 import streamlit as st
 import tensorflow as tf
-from PIL import Image
+import tensorflow_hub as hub
 import numpy as np
+from PIL import Image
 
-# Download the model file from TensorFlow Hub
-detector = tf.saved_model.load("https://tfhub.dev/tensorflow/efficientdet/d4/1")
+# Load the image detector model from TensorFlow Hub
+detector_url = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/classification/4"
+detector = hub.load(detector_url)
 
+# Function to apply image detector on a single image
 def detect_objects(image_tensor):
-    detector_output = detector(image_tensor)
-    class_names = detector_output["detection_classes"].numpy()
-    probabilities = detector_output["detection_scores"].numpy()
-    return {"classification": class_names, "probabilities": probabilities}
+    # Preprocess the image tensor to match the model's expected input shape
+    preprocessed_image = tf.image.resize(image_tensor, (224, 224)) / 255.0
+
+    # Reshape the image tensor to match the model's input shape
+    reshaped_image = tf.reshape(preprocessed_image, (1, 224, 224, 3))
+
+    # Perform object detection
+    detector_output = detector(reshaped_image)
+    return detector_output
 
 def main():
     st.title("Object Detection with TensorFlow Hub")
@@ -24,27 +32,14 @@ def main():
 
         # Convert the uploaded image to a format that the model expects
         image = Image.open(uploaded_file).convert("RGB")
-
-        # Resize the image to the expected size
-        resized_image = image.resize((224, 224))
-        
-        # Convert the resized image to a numpy array
-        image_array = np.array(resized_image)
-        
-        # Normalize the pixel values to be between 0 and 1
-        image_array = image_array / 255.0
+        image_array = np.array(image)
 
         # Add an extra dimension to the array to represent the batch size
-        image_tensor = tf.convert_to_tensor([image_array])
+        image_tensor = tf.convert_to_tensor(image_array)
 
         # Detect objects in the image
         detection_result = detect_objects(image_tensor)
 
         # Display the class names and probabilities
-        class_names = detection_result['classification']
-        probabilities = detection_result['probabilities']
-        for name, prob in zip(class_names, probabilities):
-            st.write(f"{name}: {prob:.2%}")
-
-if __name__ == "__main__":
-    main()
+        class_names = np.argmax(detection_result, axis=-1)
+        st.write(f"Class: {class_names}")
